@@ -12,8 +12,8 @@ Please create an Amazon-style compelling product description in HTML format foll
 2. Write one engaging paragraph (2-3 sentences) about the product in Amazon style - highlighting key benefits, features, and value proposition
 3. Create a bulleted list with exactly 7 items:
    - Bullets 1-5: Generate 5 unique, compelling bullet points about the product's features, quality, craftsmanship, materials, and design (Amazon-style with clear benefits and specifications)
-   - Bullet 6: "<strong>Verified by Gemmologist Reza Piroznia</strong>" (keep this exact with bold formatting)
-   - Bullet 7: "This product has <a href=\"{refundUrl}\">7 days refund</a>"
+   - Bullet 6: "<strong>Verified and Certified by Gemmologist Reza Piroznia</strong>" (keep this exact with bold formatting)
+   - Bullet 7: "This product includes a <a href=\"{refundUrl}\">7-day money-back guarantee</a>"
 
 IMPORTANT: Do NOT include any "Available Variants" bullet point in your response. The variants will be added separately after generation.
 

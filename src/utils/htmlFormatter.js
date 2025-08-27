@@ -44,14 +44,14 @@ class HTMLFormatter {
       errors.push(`Expected 8 bullet points, found ${liCount}`);
     }
     
-    // Check for required content
-    if (!html.includes('Verified by Gemmologist Reza Piroznia')) {
-      errors.push('Missing gemmologist verification');
-    }
-    
-    if (!html.includes('10 days refund')) {
-      errors.push('Missing refund policy');
-    }
+         // Check for required content
+     if (!html.includes('Verified and Certified by Gemmologist Reza Piroznia')) {
+       errors.push('Missing gemmologist verification');
+     }
+     
+     if (!html.includes('7-day money-back guarantee')) {
+       errors.push('Missing refund policy');
+     }
     
     return {
       isValid: errors.length === 0,
@@ -74,8 +74,8 @@ class HTMLFormatter {
   <li>${this.generateBulletPoint('craftsmanship')}</li>
   <li>${this.generateBulletPoint('materials')}</li>
   <li>${this.generateBulletPoint('design')}</li>
-  <li><strong>Verified by Gemmologist Reza Piroznia</strong></li>
-  <li>This product has <a href="${refundUrl}">10 days refund</a></li>
+     <li><strong>Verified and Certified by Gemmologist Reza Piroznia</strong></li>
+   <li>This product includes a <a href="${refundUrl}">7-day money-back guarantee</a></li>
 </ul>`.trim();
 
     // Add variants bullet point if meaningful variants exist
@@ -195,8 +195,8 @@ class HTMLFormatter {
   <li>Expertly crafted by skilled artisans using traditional techniques</li>
   <li>Made with the finest materials and genuine gemstones</li>
   <li>Timeless design that combines elegance with contemporary style</li>
-  <li><strong>Verified by Gemmologist Reza Piroznia</strong></li>
-  <li>This product has <a href="/refund-policy">10 days refund</a></li>
+     <li><strong>Verified and Certified by Gemmologist Reza Piroznia</strong></li>
+   <li>This product includes a <a href="/refund-policy">7-day money-back guarantee</a></li>
 </ul>`.trim();
   }
 

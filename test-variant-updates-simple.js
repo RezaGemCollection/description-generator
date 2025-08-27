@@ -47,8 +47,8 @@ async function testVariantUpdates() {
   <li>Expertly crafted by skilled artisans using traditional techniques</li>
   <li>Made with the finest materials and genuine gemstones</li>
   <li>Timeless design that combines elegance with contemporary style</li>
-  <li><strong>Verified by Gemmologist Reza Piroznia</strong></li>
-  <li>This product has <a href="https://rezagemcollection.ca/policies/refund-policy">7 days refund</a></li>
+  <li><strong>Verified and Certified by Gemmologist Reza Piroznia</strong></li>
+  <li>This product includes a <a href="https://rezagemcollection.ca/policies/refund-policy">7-day money-back guarantee</a></li>
 </ul>`;
 
   console.log('📝 Original Description:');

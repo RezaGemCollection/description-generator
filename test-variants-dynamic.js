@@ -59,8 +59,8 @@ async function testDynamicVariants() {
   <li>Expertly crafted by skilled artisans</li>
   <li>Made with the finest materials</li>
   <li>Timeless design that combines elegance</li>
-  <li><strong>Verified by Gemmologist Reza Piroznia</strong></li>
-  <li>This product has <a href="https://rezagemcollection.ca/policies/refund-policy">7 days refund</a></li>
+  <li><strong>Verified and Certified by Gemmologist Reza Piroznia</strong></li>
+  <li>This product includes a <a href="https://rezagemcollection.ca/policies/refund-policy">7-day money-back guarantee</a></li>
 </ul>`;
 
     const htmlWithVariants = geminiService.addVariantsBulletPoint(sampleHtml, sampleProduct);

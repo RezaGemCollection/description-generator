@@ -248,8 +248,8 @@ class GeminiService {
       '<h2>',
       '<ul>',
       '<li>',
-      '<strong>Verified by Gemmologist Reza Piroznia</strong>',
-      '7 days refund'
+      '<strong>Verified and Certified by Gemmologist Reza Piroznia</strong>',
+      '7-day money-back guarantee'
     ];
 
     for (const element of requiredElements) {

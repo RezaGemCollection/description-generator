@@ -53,8 +53,8 @@ async function testFix() {
 <strong>Versatile Design Potential:</strong>  Perfect for crafting necklaces, bracelets, earrings, and more, these round beads offer endless creative possibilities for jewelry designers and enthusiasts alike.</li>
   <li>
 <strong>Exceptional Durability:</strong>  Tree Moss Agate is known for its relative hardness and durability, making these beads ideal for everyday wear and long-lasting enjoyment.</li>
-  <li><strong>Verified by Gemmologist Reza Piroznia</strong></li>
-  <li>This product has <a href="https://rezagemcollection.ca/policies/refund-policy">7 days refund</a>
+  <li><strong>Verified and Certified by Gemmologist Reza Piroznia</strong></li>
+  <li>This product includes a <a href="https://rezagemcollection.ca/policies/refund-policy">7-day money-back guarantee</a>
 </li>
 </ul>`;
 
