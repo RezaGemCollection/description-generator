@@ -68,8 +68,13 @@ class GeminiService {
       const response = await result.response;
       const text = response.text();
       
-      logger.info(`Generated meta title for ${productData.title}`);
-      return this.cleanTextResponse(text);
+      const metaTitle = this.cleanTextResponse(text);
+      
+      // Validate the generated meta title
+      this.validateMetaTitle(metaTitle, productData.title);
+      
+      logger.info(`Generated meta title for ${productData.title}: ${metaTitle}`);
+      return metaTitle;
     } catch (error) {
       logger.error(`Error generating meta title: ${error.message}`);
       throw error;
@@ -275,12 +280,18 @@ class GeminiService {
   }
 
   /**
-   * Validate meta title length
+   * Validate meta title length and format
    */
-  validateMetaTitle(title) {
+  validateMetaTitle(title, productName) {
     if (title.length > 60) {
       logger.warn(`Meta title too long: ${title.length} characters (max 60) - consider editing manually`);
     }
+    
+    // Check if title starts with product name
+    if (!title.toLowerCase().startsWith(productName.toLowerCase())) {
+      logger.warn(`Meta title should start with product name: "${productName}" but got: "${title}"`);
+    }
+    
     return true;
   }
 
