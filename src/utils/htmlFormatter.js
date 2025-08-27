@@ -80,7 +80,7 @@ class HTMLFormatter {
 
     // Add variants bullet point if meaningful variants exist
     if (formattedVariants && formattedVariants !== 'Standard' && formattedVariants.trim() !== '') {
-      const variantsBullet = `<li><strong>Available Variants:</strong> ${formattedVariants}</li>`;
+      const variantsBullet = `<li>\n<strong>Available Variants:</strong> ${formattedVariants}</li>`;
       html = html.replace(
         /(<ul>)/,
         `$1\n  ${variantsBullet}`

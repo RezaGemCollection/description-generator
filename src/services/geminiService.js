@@ -226,7 +226,7 @@ class GeminiService {
       }
 
       // Create the variants bullet point
-      const variantsBullet = `<li><strong>Available Variants:</strong> ${formattedVariants}</li>`;
+      const variantsBullet = `<li>\n<strong>Available Variants:</strong> ${formattedVariants}</li>`;
 
       // Insert the variants bullet point after the first <ul> tag
       return htmlDescription.replace(
