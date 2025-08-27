@@ -550,8 +550,8 @@ class ShopifyService {
     try {
       // If no meaningful variants, remove the variants bullet point entirely
       if (!formattedVariants || formattedVariants === 'Standard' || formattedVariants.trim() === '') {
-        // Remove the first bullet point if it contains "Available Variants"
-        return htmlDescription.replace(/<li><strong>Available Variants:<\/strong>.*?<\/li>\s*/, '');
+        // Remove ALL bullet points that contain "Available Variants"
+        return htmlDescription.replace(/<li><strong>Available Variants:<\/strong>.*?<\/li>\s*/g, '');
       }
 
       // Create the new variants bullet point
@@ -559,9 +559,9 @@ class ShopifyService {
 
       // Check if there's already a variants bullet point
       if (htmlDescription.includes('<strong>Available Variants:</strong>')) {
-        // Replace existing variants bullet point
+        // Replace ALL existing variants bullet points with the new one
         return htmlDescription.replace(
-          /<li><strong>Available Variants:<\/strong>.*?<\/li>/,
+          /<li><strong>Available Variants:<\/strong>.*?<\/li>/g,
           newVariantsBullet
         );
       } else {

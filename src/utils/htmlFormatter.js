@@ -1,4 +1,5 @@
 const logger = require('./logger');
+const VariantParser = require('./variantParser');
 
 class HTMLFormatter {
   /**
@@ -61,14 +62,13 @@ class HTMLFormatter {
   /**
    * Format product description with proper structure
    */
-  static formatProductDescription(productName, description, variants, refundUrl) {
-    const formattedVariants = this.formatVariants(variants);
+  static formatProductDescription(productName, description, variants, options, refundUrl) {
+    const formattedVariants = VariantParser.formatVariantsForDescription(variants, options);
     
-    return `
+    let html = `
 <h2>About ${this.escapeHTML(productName)}</h2>
 <p>${description}</p>
 <ul>
-  <li><strong>Available Variants:</strong> ${formattedVariants}</li>
   <li>${this.generateBulletPoint('features')}</li>
   <li>${this.generateBulletPoint('quality')}</li>
   <li>${this.generateBulletPoint('craftsmanship')}</li>
@@ -77,26 +77,20 @@ class HTMLFormatter {
   <li><strong>Verified by Gemmologist Reza Piroznia</strong></li>
   <li>This product has <a href="${refundUrl}">10 days refund</a></li>
 </ul>`.trim();
-  }
 
-  /**
-   * Format variants for display
-   */
-  static formatVariants(variants) {
-    if (!variants || variants.length === 0) {
-      return 'Standard';
+    // Add variants bullet point if meaningful variants exist
+    if (formattedVariants && formattedVariants !== 'Standard' && formattedVariants.trim() !== '') {
+      const variantsBullet = `<li><strong>Available Variants:</strong> ${formattedVariants}</li>`;
+      html = html.replace(
+        /(<ul>)/,
+        `$1\n  ${variantsBullet}`
+      );
     }
     
-    const variantOptions = variants.map(variant => {
-      const options = [];
-      if (variant.option1) options.push(variant.option1);
-      if (variant.option2) options.push(variant.option2);
-      if (variant.option3) options.push(variant.option3);
-      return options.join(' - ');
-    });
-    
-    return variantOptions.join(', ');
+    return html;
   }
+
+
 
   /**
    * Generate placeholder bullet points (for fallback)

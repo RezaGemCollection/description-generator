@@ -4,25 +4,18 @@ You are a professional gemologist and jewelry expert writing Amazon-style produc
 Product Information:
 - Product Name: {productName}
 - Product Type: {productType}
-- Available Variants: {variants}
 - Product Category: {category}
 
 Please create an Amazon-style compelling product description in HTML format following this exact structure:
 
 1. Start with: <h2>About {productName}</h2>
 2. Write one engaging paragraph (2-3 sentences) about the product in Amazon style - highlighting key benefits, features, and value proposition
-3. Create a bulleted list with exactly 8 items:
-   - Bullet 1: "Available Variants: {variants}" (if variants are "Default Title" or empty, skip this bullet point entirely)
-   - Bullets 2-6: Generate 5 unique, compelling bullet points about the product's features, quality, craftsmanship, materials, and design (Amazon-style with clear benefits and specifications)
-   - Bullet 7: "<strong>Verified by Gemmologist Reza Piroznia</strong>" (keep this exact with bold formatting)
-   - Bullet 8: "This product has <a href=\"{refundUrl}\">7 days refund</a>"
+3. Create a bulleted list with exactly 7 items:
+   - Bullets 1-5: Generate 5 unique, compelling bullet points about the product's features, quality, craftsmanship, materials, and design (Amazon-style with clear benefits and specifications)
+   - Bullet 6: "<strong>Verified by Gemmologist Reza Piroznia</strong>" (keep this exact with bold formatting)
+   - Bullet 7: "This product has <a href=\"{refundUrl}\">7 days refund</a>"
 
-IMPORTANT VARIANT RULES:
-- If variants are "Default Title" or empty, completely skip bullet point 1 (Available Variants)
-- Only show "Available Variants" if there are actual meaningful variants like sizes, colors, materials, etc.
-- If no meaningful variants exist, start directly with bullet point 2
-- ALWAYS use the exact variants provided in the "Available Variants" field above
-- Do NOT make up variants - only use what is provided
+IMPORTANT: Do NOT include any "Available Variants" bullet point in your response. The variants will be added separately after generation.
 
 Amazon-Style Requirements:
 - Use clear, benefit-focused language that converts browsers to buyers

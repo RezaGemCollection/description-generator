@@ -1,5 +1,6 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { PRODUCT_DESCRIPTION_PROMPT, META_TITLE_PROMPT, META_DESCRIPTION_PROMPT } = require('../../config/gemini-prompts');
+const VariantParser = require('../utils/variantParser');
 const logger = require('../utils/logger');
 
 class GeminiService {
@@ -41,7 +42,14 @@ class GeminiService {
       const text = response.text();
       
       logger.info(`Generated product description for ${productData.title}`);
-      return this.cleanHtmlResponse(text);
+      
+      // Clean the generated HTML
+      const cleanedHtml = this.cleanHtmlResponse(text);
+      
+      // Add variants bullet point dynamically
+      const descriptionWithVariants = this.addVariantsBulletPoint(cleanedHtml, productData);
+      
+      return descriptionWithVariants;
     } catch (error) {
       logger.error(`Error generating product description: ${error.message}`);
       throw error;
@@ -114,13 +122,11 @@ class GeminiService {
    * Build product description prompt with product data
    */
   buildProductDescriptionPrompt(productData) {
-    const variants = this.formatVariants(productData.variants);
     const refundUrl = 'https://rezagemcollection.ca/policies/refund-policy';
     
     return PRODUCT_DESCRIPTION_PROMPT
       .replace('{productName}', productData.title)
       .replace('{productType}', productData.product_type || 'Jewelry')
-      .replace('{variants}', variants)
       .replace('{category}', productData.product_type || 'Jewelry')
       .replace('{refundUrl}', refundUrl);
   }
@@ -151,48 +157,7 @@ class GeminiService {
       .replace('{shortDescription}', shortDescription);
   }
 
-  /**
-   * Format product variants for prompt
-   */
-  formatVariants(variants) {
-    if (!variants || variants.length === 0) {
-      return '';
-    }
 
-    // Filter out variants with "Default Title" and create meaningful variant strings
-    const variantOptions = variants.map(variant => {
-      const options = [];
-      
-      // Add option1 if it exists and is not "Default Title"
-      if (variant.option1 && variant.option1 !== 'Default Title') {
-        options.push(variant.option1);
-      }
-      
-      // Add option2 if it exists and is not "Default Title"
-      if (variant.option2 && variant.option2 !== 'Default Title') {
-        options.push(variant.option2);
-      }
-      
-      // Add option3 if it exists and is not "Default Title"
-      if (variant.option3 && variant.option3 !== 'Default Title') {
-        options.push(variant.option3);
-      }
-      
-      // If no meaningful options found, use the variant title if it's not "Default Title"
-      if (options.length === 0 && variant.title && variant.title !== 'Default Title') {
-        return variant.title;
-      }
-      
-      return options.join(' - ');
-    }).filter(option => option && option !== 'Default Title' && option.trim() !== '');
-
-    // If no meaningful variants found, return empty string
-    if (variantOptions.length === 0) {
-      return '';
-    }
-
-    return variantOptions.join(', ');
-  }
 
   /**
    * Extract key features from product data
@@ -245,6 +210,34 @@ class GeminiService {
       .replace(/"/g, '')
       .replace(/'/g, '')
       .trim();
+  }
+
+  /**
+   * Add variants bullet point to generated description
+   */
+  addVariantsBulletPoint(htmlDescription, productData) {
+    try {
+      const VariantParser = require('../utils/variantParser');
+      const formattedVariants = VariantParser.formatVariantsForDescription(productData.variants, productData.options);
+      
+      // If no meaningful variants, return the description as is
+      if (!formattedVariants || formattedVariants === 'Standard' || formattedVariants.trim() === '') {
+        return htmlDescription;
+      }
+
+      // Create the variants bullet point
+      const variantsBullet = `<li><strong>Available Variants:</strong> ${formattedVariants}</li>`;
+
+      // Insert the variants bullet point after the first <ul> tag
+      return htmlDescription.replace(
+        /(<ul>)/,
+        `$1\n  ${variantsBullet}`
+      );
+
+    } catch (error) {
+      logger.error(`Error adding variants bullet point: ${error.message}`);
+      return htmlDescription; // Return original if adding variants fails
+    }
   }
 
   /**
