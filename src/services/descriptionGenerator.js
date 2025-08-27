@@ -41,7 +41,7 @@ class DescriptionGenerator {
       const content = await geminiService.generateAllContent(product);
 
       // Validate generated content
-      this.validateGeneratedContent(content);
+      this.validateGeneratedContent(content, product);
 
       // Update product in Shopify
       const updatedProduct = await shopifyService.updateProduct(productId, content);
@@ -189,7 +189,7 @@ class DescriptionGenerator {
       const content = await geminiService.generateAllContent(product);
 
       // Validate generated content
-      this.validateGeneratedContent(content);
+      this.validateGeneratedContent(content, product);
 
       // Update product in Shopify
       const updatedProduct = await shopifyService.updateProduct(product.id, content);
@@ -221,7 +221,7 @@ class DescriptionGenerator {
   /**
    * Validate generated content
    */
-  validateGeneratedContent(content) {
+  validateGeneratedContent(content, productData = null) {
     if (!content.description) {
       throw new Error('Generated description is empty');
     }
@@ -238,7 +238,11 @@ class DescriptionGenerator {
     geminiService.validateDescription(content.description);
     
     // These now only log warnings, not throw errors
-    geminiService.validateMetaTitle(content.metaTitle);
+    if (productData && productData.title) {
+      geminiService.validateMetaTitle(content.metaTitle, productData.title);
+    } else {
+      geminiService.validateMetaTitle(content.metaTitle, 'Unknown Product');
+    }
     geminiService.validateMetaDescription(content.metaDescription);
   }
 
