@@ -88,6 +88,7 @@ class VariantParser {
 
   /**
    * Format variants for display in description
+   * Groups variants by option type (e.g., "Size: 2 mm, 4 mm, 6 mm; Color: Red, Blue")
    */
   static formatVariantsForDescription(variants, options) {
     try {
@@ -97,24 +98,43 @@ class VariantParser {
 
       const optionNames = options ? options.map(opt => opt.name) : [];
       
-      const formattedVariants = variants.map(variant => {
-        const optionValues = [];
+      // Group option values by option name
+      const optionGroups = {};
+      
+      optionNames.forEach((optionName, index) => {
+        const values = new Set();
         
-        optionNames.forEach((optionName, index) => {
+        variants.forEach(variant => {
           const value = variant[`option${index + 1}`];
-          if (value) {
-            optionValues.push(`${optionName}: ${value}`);
+          if (value && value !== 'Default Title') {
+            values.add(value);
           }
         });
-
-        if (optionValues.length > 0) {
-          return optionValues.join(', ');
-        } else {
-          return variant.title || 'Standard';
+        
+        if (values.size > 0) {
+          const sortedValues = Array.from(values).sort((a, b) => {
+            // Try to sort numerically if possible
+            const aNum = parseFloat(a);
+            const bNum = parseFloat(b);
+            
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+              return aNum - bNum;
+            }
+            
+            // Fall back to alphabetical sorting
+            return a.localeCompare(b);
+          });
+          
+          optionGroups[optionName] = sortedValues;
         }
       });
 
-      return formattedVariants.join('; ');
+      // Format as "Option: value1, value2, value3"
+      const formattedGroups = Object.entries(optionGroups).map(([optionName, values]) => {
+        return `${optionName}: ${values.join(', ')}`;
+      });
+
+      return formattedGroups.join('; ');
     } catch (error) {
       logger.error(`Error formatting variants for description: ${error.message}`);
       return 'Standard';

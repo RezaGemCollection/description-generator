@@ -17,7 +17,7 @@ async function testVariantUpdateOnly() {
 <h2>About Test Ring</h2>
 <p>This beautiful ring features exquisite craftsmanship and premium materials.</p>
 <ul>
-  <li><strong>Available Variants:</strong> Size: Small, Material: Gold</li>
+  <li><strong>Available Variants:</strong> Size: Small; Material: Gold</li>
   <li>Premium quality gemstone with excellent clarity</li>
   <li>Handcrafted by skilled artisans</li>
   <li>Made with 14k gold for durability</li>
@@ -57,12 +57,12 @@ async function testVariantUpdateOnly() {
     ]
   };
 
-  // Test the variant update function
-  try {
-    const updatedDescription = shopifyService.updateVariantsBulletPoint(
-      sampleProduct.body_html, 
-      'Size: Small, Material: Gold; Size: Medium, Material: Gold; Size: Large, Material: Gold'
-    );
+     // Test the variant update function
+   try {
+     const updatedDescription = shopifyService.updateVariantsBulletPoint(
+       sampleProduct.body_html, 
+       'Size: Small, Medium, Large; Material: Gold'
+     );
 
     console.log('📝 Updated Description:');
     console.log(updatedDescription);
@@ -81,10 +81,10 @@ async function testVariantUpdateOnly() {
 
     // Test adding variants back
     console.log('🔄 Adding variants back...');
-    const finalDescription = shopifyService.updateVariantsBulletPoint(
-      noVariantsDescription, 
-      'Size: Small, Material: Gold; Size: Medium, Material: Gold'
-    );
+         const finalDescription = shopifyService.updateVariantsBulletPoint(
+       noVariantsDescription, 
+       'Size: Small, Medium; Material: Gold'
+     );
 
     console.log('📝 Final Description:');
     console.log(finalDescription);
@@ -100,34 +100,34 @@ async function testVariantUpdateOnly() {
 async function testVariantScenarios() {
   console.log('\n🧪 Testing Different Variant Scenarios\n');
 
-  const scenarios = [
-    {
-      name: 'Adding new variant',
-      original: 'Size: Small, Material: Gold',
-      updated: 'Size: Small, Material: Gold; Size: Medium, Material: Gold'
-    },
-    {
-      name: 'Changing material',
-      original: 'Size: Small, Material: Gold',
-      updated: 'Size: Small, Material: Platinum'
-    },
-    {
-      name: 'Removing all variants',
-      original: 'Size: Small, Material: Gold; Size: Medium, Material: Gold',
-      updated: 'Standard'
-    },
-    {
-      name: 'Adding multiple variants',
-      original: 'Size: Small, Material: Gold',
-      updated: 'Size: Small, Material: Gold; Size: Medium, Material: Gold; Size: Large, Material: Gold'
-    }
-  ];
+     const scenarios = [
+     {
+       name: 'Adding new variant',
+       original: 'Size: Small; Material: Gold',
+       updated: 'Size: Small, Medium; Material: Gold'
+     },
+     {
+       name: 'Changing material',
+       original: 'Size: Small; Material: Gold',
+       updated: 'Size: Small; Material: Platinum'
+     },
+     {
+       name: 'Removing all variants',
+       original: 'Size: Small, Medium; Material: Gold',
+       updated: 'Standard'
+     },
+     {
+       name: 'Adding multiple variants',
+       original: 'Size: Small; Material: Gold',
+       updated: 'Size: Small, Medium, Large; Material: Gold'
+     }
+   ];
 
   const sampleHtml = `
 <h2>About Test Product</h2>
 <p>Beautiful product description.</p>
 <ul>
-  <li><strong>Available Variants:</strong> Size: Small, Material: Gold</li>
+  <li><strong>Available Variants:</strong> Size: Small; Material: Gold</li>
   <li>Feature 1</li>
   <li>Feature 2</li>
   <li><strong>Verified by Gemmologist Reza Piroznia</strong></li>
