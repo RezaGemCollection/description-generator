@@ -42,11 +42,10 @@ Key Features: {keyFeatures}
 Amazon-Style Requirements:
 - 50-60 characters maximum
 - ALWAYS start with the product name: "{productName}"
-- Include primary keyword and key benefit after the product name
+- Analyze the product name and category to determine the best benefits and keywords
+- Include compelling benefits like: Premium Quality, Handcrafted, Natural Beauty, Luxury, Authentic, Certified, etc.
+- Focus on value proposition and unique selling points
 - Be compelling and click-worthy like Amazon product titles
-- Include brand name if space allows
-- Focus on value proposition and key selling points
-- Use action words and benefit-focused language
 - Make it search-friendly and conversion-optimized
 
 Format: "{productName} - [benefit/keyword]"
