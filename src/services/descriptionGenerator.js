@@ -147,14 +147,16 @@ class DescriptionGenerator {
    */
   async handleWebhookTrigger(webhookData) {
     try {
-      const { action, productId, product } = webhookData;
+      const { action, productId, product, reason } = webhookData;
       
       if (action === 'generate_description') {
-        logger.info(`Webhook triggered description generation for product ${productId}`);
+        logger.info(`Webhook triggered description generation for product ${productId} - Reason: ${reason}`);
         
         // Use product data from webhook if available, otherwise fetch from Shopify
         if (product) {
-          return await this.generateDescriptionFromData(product);
+          // Force regeneration if variants changed
+          const forceRegenerate = reason === 'Variants changed';
+          return await this.generateDescriptionFromData(product, forceRegenerate);
         } else {
           return await this.generateProductDescription(productId);
         }
@@ -171,11 +173,16 @@ class DescriptionGenerator {
   /**
    * Generate description from product data (for webhook processing)
    */
-  async generateDescriptionFromData(product) {
+  async generateDescriptionFromData(product, forceRegenerate = false) {
     try {
-      // Check if product already has AI-generated description
-      if (this.hasAIGeneratedDescription(product)) {
+      // Check if product already has AI-generated description (unless forcing regeneration)
+      if (!forceRegenerate && this.hasAIGeneratedDescription(product)) {
+        logger.info(`Product ${product.id} already has AI-generated description, skipping`);
         return { status: 'already_generated' };
+      }
+
+      if (forceRegenerate) {
+        logger.info(`Forcing regeneration of description for product ${product.id} due to variant changes`);
       }
 
       // Generate content using Gemini AI

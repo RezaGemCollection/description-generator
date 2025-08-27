@@ -77,6 +77,41 @@ class ShopifyGeminiAutomation {
       }
     });
 
+    // Force regenerate description for specific product (bypasses "already generated" check)
+    this.app.post('/force-regenerate/:productId', async (req, res) => {
+      try {
+        const { productId } = req.params;
+        logger.info(`Force regenerating description for product ${productId}`);
+        
+        // Get the product data
+        const product = await shopifyService.getProduct(productId);
+        if (!product) {
+          return res.status(404).json({ error: 'Product not found' });
+        }
+        
+        // Force regeneration
+        const result = await descriptionGenerator.generateDescriptionFromData(product, true);
+        res.json(result);
+      } catch (error) {
+        logger.error('Force regeneration failed:', error);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Update only variants in existing description
+    this.app.post('/update-variants/:productId', async (req, res) => {
+      try {
+        const { productId } = req.params;
+        logger.info(`Updating variants in description for product ${productId}`);
+        
+        const result = await shopifyService.updateVariantsInDescription(productId);
+        res.json(result);
+      } catch (error) {
+        logger.error('Variant update failed:', error);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
     // Process products needing descriptions
     this.app.post('/process-batch', async (req, res) => {
       try {
@@ -203,6 +238,10 @@ class ShopifyGeminiAutomation {
         if (webhookData && webhookData.action === 'generate_description') {
           // Handle description generation
           const result = await descriptionGenerator.handleWebhookTrigger(webhookData);
+          logger.logWebhookEvent(topic, payload.id, 'processed', { result });
+        } else if (webhookData && webhookData.action === 'update_variants') {
+          // Handle variant update only
+          const result = await shopifyService.updateVariantsInDescription(webhookData.productId);
           logger.logWebhookEvent(topic, payload.id, 'processed', { result });
         }
         

@@ -385,16 +385,23 @@ class ShopifyService {
     // Check if variants have changed by comparing with previous state
     const hasVariantChanges = await VariantParser.detectVariantChanges(product);
     
-    // Check if product needs description regeneration
-    if (!product.body_html || 
-        !product.body_html.includes('Verified by Gemmologist Reza Piroznia') ||
-        hasVariantChanges) {
-      
-      const reason = hasVariantChanges ? 'Variants changed' : 'Product needs description';
-      logger.info(`Product ${product.id} needs description update: ${reason}`);
+    // Check if product needs description generation or variant update
+    if (!product.body_html || !product.body_html.includes('Verified by Gemmologist Reza Piroznia')) {
+      const reason = 'Product needs description';
+      logger.info(`Product ${product.id} needs description generation: ${reason}`);
       
       return {
         action: 'generate_description',
+        productId: product.id,
+        product: product,
+        reason: reason
+      };
+    } else if (hasVariantChanges) {
+      const reason = 'Variants changed';
+      logger.info(`Product ${product.id} needs variant update: ${reason}`);
+      
+      return {
+        action: 'update_variants',
         productId: product.id,
         product: product,
         reason: reason
@@ -420,11 +427,17 @@ class ShopifyService {
         return false;
       }
 
+      // Log the product data for debugging
+      logger.info(`Current product variants: ${JSON.stringify(currentProduct.variants?.map(v => ({ id: v.id, title: v.title, option1: v.option1, option2: v.option2 })))}`);
+      logger.info(`Webhook product variants: ${JSON.stringify(product.variants?.map(v => ({ id: v.id, title: v.title, option1: v.option1, option2: v.option2 })))}`);
+
       // Use VariantParser to detect changes
       const changeResult = VariantParser.detectVariantChanges(currentProduct, product);
       
       if (changeResult.hasChanges) {
         logger.info(`Variant changes detected for product ${product.id}: ${changeResult.details}`);
+      } else {
+        logger.info(`No variant changes detected for product ${product.id}`);
       }
       
       return changeResult.hasChanges;
@@ -481,6 +494,87 @@ class ShopifyService {
         success: false,
         error: error.message
       };
+    }
+  }
+
+  /**
+   * Update only the variants bullet point in existing description
+   */
+  async updateVariantsInDescription(productId) {
+    try {
+      await this.applyRateLimit();
+      
+      // Get the current product
+      const product = await this.getProduct(productId);
+      if (!product) {
+        throw new Error(`Product ${productId} not found`);
+      }
+
+      // Check if product has AI-generated description
+      if (!product.body_html || !product.body_html.includes('Verified by Gemmologist Reza Piroznia')) {
+        logger.warn(`Product ${productId} does not have AI-generated description, skipping variant update`);
+        return { status: 'skipped', reason: 'No AI-generated description found' };
+      }
+
+      // Format current variants
+      const formattedVariants = VariantParser.formatVariantsForDescription(product.variants, product.options);
+      
+      // Update the variants bullet point in the description
+      const updatedDescription = this.updateVariantsBulletPoint(product.body_html, formattedVariants);
+      
+      // Update the product with the modified description
+      const updateData = {
+        id: productId,
+        body_html: updatedDescription
+      };
+
+      const updatedProduct = await this.shopify.product.update(productId, updateData);
+      logger.info(`Updated variants in description for product: ${updatedProduct.title} (ID: ${productId})`);
+      
+      return {
+        status: 'success',
+        product: updatedProduct,
+        updatedVariants: formattedVariants
+      };
+
+    } catch (error) {
+      logger.error(`Error updating variants in description for product ${productId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Update the variants bullet point in existing HTML description
+   */
+  updateVariantsBulletPoint(htmlDescription, formattedVariants) {
+    try {
+      // If no meaningful variants, remove the variants bullet point entirely
+      if (!formattedVariants || formattedVariants === 'Standard' || formattedVariants.trim() === '') {
+        // Remove the first bullet point if it contains "Available Variants"
+        return htmlDescription.replace(/<li><strong>Available Variants:<\/strong>.*?<\/li>\s*/, '');
+      }
+
+      // Create the new variants bullet point
+      const newVariantsBullet = `<li><strong>Available Variants:</strong> ${formattedVariants}</li>`;
+
+      // Check if there's already a variants bullet point
+      if (htmlDescription.includes('<strong>Available Variants:</strong>')) {
+        // Replace existing variants bullet point
+        return htmlDescription.replace(
+          /<li><strong>Available Variants:<\/strong>.*?<\/li>/,
+          newVariantsBullet
+        );
+      } else {
+        // Insert new variants bullet point after the first <ul> tag
+        return htmlDescription.replace(
+          /(<ul>)/,
+          `$1\n  ${newVariantsBullet}`
+        );
+      }
+
+    } catch (error) {
+      logger.error(`Error updating variants bullet point: ${error.message}`);
+      return htmlDescription; // Return original if update fails
     }
   }
 }

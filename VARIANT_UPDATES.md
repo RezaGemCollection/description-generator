@@ -20,13 +20,13 @@ The system compares the updated product with the current product state to detect
 - **Variant Details**: Changing variant titles or option combinations
 - **Option Values**: Adding, removing, or modifying option values
 
-### 3. Description Regeneration
+### 3. Smart Description Updates
 If variant changes are detected, the system:
 
-1. Fetches the current product data from Shopify
-2. Compares it with the webhook data using `VariantParser.detectVariantChanges()`
-3. Triggers description regeneration if changes are found
-4. Updates the product description with new variant information
+1. **For products without AI descriptions**: Generates a complete new description
+2. **For products with existing AI descriptions**: Updates only the variants bullet point
+3. **Preserves all other content**: Keeps the existing description, features, and formatting
+4. **Dynamic variant updates**: Only the "Available Variants" bullet point is modified
 
 ## Variant Detection Logic
 
@@ -111,7 +111,7 @@ This will test:
 - Size: Small, Medium, Large
 - Material: Gold
 
-**Result:** Description regenerated with updated variant list
+**Result:** Only the "Available Variants" bullet point is updated, rest of description remains unchanged
 
 ### Scenario 2: Changing Material Options
 **Before:**
@@ -122,7 +122,7 @@ This will test:
 - Size: Small, Medium
 - Material: Platinum
 
-**Result:** Description regenerated with new material information
+**Result:** Only the "Available Variants" bullet point is updated with new material, rest of description remains unchanged
 
 ### Scenario 3: No Changes
 **Before:**
@@ -133,13 +133,27 @@ This will test:
 - Size: Small, Medium
 - Material: Gold
 
-**Result:** No regeneration (no changes detected)
+**Result:** No update (no changes detected)
+
+### Scenario 4: Removing All Variants
+**Before:**
+- Size: Small, Medium
+- Material: Gold
+
+**After:**
+- No variants (Standard product)
+
+**Result:** The "Available Variants" bullet point is completely removed from the description
 
 ## API Endpoints
 
 ### Manual Variant Update Trigger
 ```bash
-POST /generate-description/:productId
+# Update only variants in existing description
+POST /update-variants/:productId
+
+# Force regenerate entire description
+POST /force-regenerate/:productId
 ```
 
 ### Check Processing Status
