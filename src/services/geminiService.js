@@ -220,13 +220,26 @@ class GeminiService {
       const VariantParser = require('../utils/variantParser');
       const formattedVariants = VariantParser.formatVariantsForDescription(productData.variants, productData.options);
       
-      // If no meaningful variants, return the description as is
+      // Always add a variants bullet point, even for empty/default variants
+      let variantsText = formattedVariants;
+      
+      // Handle cases where variants are empty or default
       if (!formattedVariants || formattedVariants === 'Standard' || formattedVariants.trim() === '') {
-        return htmlDescription;
+        // Check if there are any variants at all
+        if (productData.variants && productData.variants.length > 0) {
+          const firstVariant = productData.variants[0];
+          if (firstVariant.title === 'Default Title' || firstVariant.option1 === 'Default Title') {
+            variantsText = 'Single Variant';
+          } else {
+            variantsText = 'Standard';
+          }
+        } else {
+          variantsText = 'Standard';
+        }
       }
 
       // Create the variants bullet point
-      const variantsBullet = `<li>\n<strong>Available Variants:</strong> ${formattedVariants}</li>`;
+      const variantsBullet = `<li>\n<strong>Available Variants:</strong> ${variantsText}</li>`;
 
       // Insert the variants bullet point after the first <ul> tag
       return htmlDescription.replace(

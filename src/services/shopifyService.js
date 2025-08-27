@@ -548,14 +548,16 @@ class ShopifyService {
    */
   updateVariantsBulletPoint(htmlDescription, formattedVariants) {
     try {
-      // If no meaningful variants, remove the variants bullet point entirely
+      // Always show a variants bullet point, even for empty/default variants
+      let variantsText = formattedVariants;
+      
+      // Handle cases where variants are empty or default
       if (!formattedVariants || formattedVariants === 'Standard' || formattedVariants.trim() === '') {
-        // Remove ALL bullet points that contain "Available Variants"
-        return htmlDescription.replace(/<li>\s*<strong>Available Variants:<\/strong>.*?<\/li>\s*/g, '');
+        variantsText = 'Standard';
       }
 
       // Create the new variants bullet point
-      const newVariantsBullet = `<li>\n<strong>Available Variants:</strong> ${formattedVariants}</li>`;
+      const newVariantsBullet = `<li>\n<strong>Available Variants:</strong> ${variantsText}</li>`;
 
       // Check if there's already a variants bullet point
       if (htmlDescription.includes('<strong>Available Variants:</strong>')) {
