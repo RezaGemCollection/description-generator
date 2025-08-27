@@ -159,13 +159,37 @@ class GeminiService {
       return '';
     }
 
+    // Filter out variants with "Default Title" and create meaningful variant strings
     const variantOptions = variants.map(variant => {
       const options = [];
-      if (variant.option1 && variant.option1 !== 'Default Title') options.push(variant.option1);
-      if (variant.option2 && variant.option2 !== 'Default Title') options.push(variant.option2);
-      if (variant.option3 && variant.option3 !== 'Default Title') options.push(variant.option3);
+      
+      // Add option1 if it exists and is not "Default Title"
+      if (variant.option1 && variant.option1 !== 'Default Title') {
+        options.push(variant.option1);
+      }
+      
+      // Add option2 if it exists and is not "Default Title"
+      if (variant.option2 && variant.option2 !== 'Default Title') {
+        options.push(variant.option2);
+      }
+      
+      // Add option3 if it exists and is not "Default Title"
+      if (variant.option3 && variant.option3 !== 'Default Title') {
+        options.push(variant.option3);
+      }
+      
+      // If no meaningful options found, use the variant title if it's not "Default Title"
+      if (options.length === 0 && variant.title && variant.title !== 'Default Title') {
+        return variant.title;
+      }
+      
       return options.join(' - ');
-    }).filter(option => option && option !== 'Default Title');
+    }).filter(option => option && option !== 'Default Title' && option.trim() !== '');
+
+    // If no meaningful variants found, return empty string
+    if (variantOptions.length === 0) {
+      return '';
+    }
 
     return variantOptions.join(', ');
   }

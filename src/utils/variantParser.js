@@ -360,6 +360,130 @@ class VariantParser {
       };
     }
   }
+
+  /**
+   * Compare two product states to detect variant changes
+   */
+  static detectVariantChanges(oldProduct, newProduct) {
+    try {
+      const oldVariants = oldProduct.variants || [];
+      const newVariants = newProduct.variants || [];
+      const oldOptions = oldProduct.options || [];
+      const newOptions = newProduct.options || [];
+
+      // Check if variant count changed
+      if (oldVariants.length !== newVariants.length) {
+        return {
+          hasChanges: true,
+          changeType: 'variant_count',
+          oldCount: oldVariants.length,
+          newCount: newVariants.length,
+          details: `Variant count changed from ${oldVariants.length} to ${newVariants.length}`
+        };
+      }
+
+      // Check if options changed
+      if (oldOptions.length !== newOptions.length) {
+        return {
+          hasChanges: true,
+          changeType: 'option_count',
+          oldCount: oldOptions.length,
+          newCount: newOptions.length,
+          details: `Option count changed from ${oldOptions.length} to ${newOptions.length}`
+        };
+      }
+
+      // Check option names and values
+      for (let i = 0; i < oldOptions.length; i++) {
+        const oldOption = oldOptions[i];
+        const newOption = newOptions[i];
+
+        if (oldOption.name !== newOption.name) {
+          return {
+            hasChanges: true,
+            changeType: 'option_name',
+            oldValue: oldOption.name,
+            newValue: newOption.name,
+            details: `Option name changed from "${oldOption.name}" to "${newOption.name}"`
+          };
+        }
+
+        const oldValues = oldOption.values || [];
+        const newValues = newOption.values || [];
+
+        if (oldValues.length !== newValues.length) {
+          return {
+            hasChanges: true,
+            changeType: 'option_values_count',
+            optionName: oldOption.name,
+            oldCount: oldValues.length,
+            newCount: newValues.length,
+            details: `Option "${oldOption.name}" values count changed from ${oldValues.length} to ${newValues.length}`
+          };
+        }
+
+        // Check if any values changed
+        for (let j = 0; j < oldValues.length; j++) {
+          if (oldValues[j] !== newValues[j]) {
+            return {
+              hasChanges: true,
+              changeType: 'option_value',
+              optionName: oldOption.name,
+              oldValue: oldValues[j],
+              newValue: newValues[j],
+              details: `Option "${oldOption.name}" value changed from "${oldValues[j]}" to "${newValues[j]}"`
+            };
+          }
+        }
+      }
+
+      // Check variant details
+      for (let i = 0; i < oldVariants.length; i++) {
+        const oldVariant = oldVariants[i];
+        const newVariant = newVariants[i];
+
+        // Check variant options
+        if (oldVariant.option1 !== newVariant.option1 ||
+            oldVariant.option2 !== newVariant.option2 ||
+            oldVariant.option3 !== newVariant.option3) {
+          
+          return {
+            hasChanges: true,
+            changeType: 'variant_options',
+            variantIndex: i,
+            oldVariant: oldVariant.title,
+            newVariant: newVariant.title,
+            details: `Variant options changed from "${oldVariant.title}" to "${newVariant.title}"`
+          };
+        }
+
+        // Check variant title
+        if (oldVariant.title !== newVariant.title) {
+          return {
+            hasChanges: true,
+            changeType: 'variant_title',
+            variantIndex: i,
+            oldValue: oldVariant.title,
+            newValue: newVariant.title,
+            details: `Variant title changed from "${oldVariant.title}" to "${newVariant.title}"`
+          };
+        }
+      }
+
+      return {
+        hasChanges: false,
+        details: 'No variant changes detected'
+      };
+
+    } catch (error) {
+      logger.error(`Error detecting variant changes: ${error.message}`);
+      return {
+        hasChanges: true, // Assume changes if we can't determine
+        changeType: 'error',
+        details: `Error detecting changes: ${error.message}`
+      };
+    }
+  }
 }
 
 module.exports = VariantParser;

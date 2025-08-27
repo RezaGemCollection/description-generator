@@ -1,5 +1,6 @@
 const Shopify = require('shopify-api-node');
 const shopifyConfig = require('../../config/shopify-config');
+const VariantParser = require('../utils/variantParser');
 const logger = require('../utils/logger');
 
 class ShopifyService {
@@ -381,20 +382,57 @@ class ShopifyService {
     const product = payload;
     logger.info(`Product updated: ${product.title} (ID: ${product.id})`);
     
+    // Check if variants have changed by comparing with previous state
+    const hasVariantChanges = await VariantParser.detectVariantChanges(product);
+    
     // Check if product needs description regeneration
     if (!product.body_html || 
-        !product.body_html.includes('Verified by Gemmologist Reza Piroznia')) {
+        !product.body_html.includes('Verified by Gemmologist Reza Piroznia') ||
+        hasVariantChanges) {
+      
+      const reason = hasVariantChanges ? 'Variants changed' : 'Product needs description';
+      logger.info(`Product ${product.id} needs description update: ${reason}`);
+      
       return {
         action: 'generate_description',
         productId: product.id,
-        product: product
+        product: product,
+        reason: reason
       };
     }
     
     return {
       action: 'skip',
-      reason: 'Product already has AI-generated description'
+      reason: 'Product already has AI-generated description and no variant changes'
     };
+  }
+
+  /**
+   * Detect if product variants have changed
+   */
+  async detectVariantChanges(product) {
+    try {
+      // Get the current product from Shopify to compare variants
+      const currentProduct = await this.getProduct(product.id);
+      
+      if (!currentProduct) {
+        logger.warn(`Could not fetch current product ${product.id} for variant comparison`);
+        return false;
+      }
+
+      // Use VariantParser to detect changes
+      const changeResult = VariantParser.detectVariantChanges(currentProduct, product);
+      
+      if (changeResult.hasChanges) {
+        logger.info(`Variant changes detected for product ${product.id}: ${changeResult.details}`);
+      }
+      
+      return changeResult.hasChanges;
+    } catch (error) {
+      logger.error(`Error detecting variant changes for product ${product.id}: ${error.message}`);
+      // If we can't determine if variants changed, assume they did to be safe
+      return true;
+    }
   }
 
   /**
