@@ -206,8 +206,13 @@ class BarcodeGenerator {
   static generateEAN13Barcode(product, variant, countryCode = '00') {
     try {
       // EAN-13 format: Country Code (2) + Manufacturer Code (5) + Product Code (5) + Check Digit (1)
-      const productId = (product.id || '0').toString().padStart(5, '0').substring(0, 5);
-      const variantId = (variant.id || '0').toString().padStart(5, '0').substring(0, 5);
+      // Take last 5 digits of product ID and variant ID to ensure proper length
+      const productIdStr = (product.id || '0').toString();
+      const variantIdStr = (variant.id || '0').toString();
+      
+      // Take last 5 digits of each ID
+      const productId = productIdStr.slice(-5).padStart(5, '0');
+      const variantId = variantIdStr.slice(-5).padStart(5, '0');
       
       // Create base code (12 digits)
       const baseCode = `${countryCode}${productId}${variantId}`;
@@ -218,7 +223,7 @@ class BarcodeGenerator {
       // Return complete EAN-13 barcode
       const ean13Barcode = `${baseCode}${checkDigit}`;
       
-      logger.info(`Generated EAN-13 barcode for variant ${variant.id}: ${ean13Barcode}`);
+      logger.info(`Generated EAN-13 barcode for variant ${variant.id}: ${ean13Barcode} (from product: ${product.id}, variant: ${variant.id})`);
       return ean13Barcode;
     } catch (error) {
       logger.error(`Error generating EAN-13 barcode: ${error.message}`);
