@@ -386,7 +386,7 @@ class ShopifyService {
     logger.info(`Product updated: ${product.title} (ID: ${product.id})`);
     
     // Check if variants have changed by comparing with previous state
-    const hasVariantChanges = await VariantParser.detectVariantChanges(product);
+    const hasVariantChanges = await this.detectVariantChanges(product);
     
     // For product updates, ONLY handle variant changes, NOT description generation
     // Description generation should ONLY happen on product creation

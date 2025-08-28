@@ -3,32 +3,16 @@ const logger = require('./logger');
 
 class BarcodeGenerator {
   /**
-   * Generate a unique barcode for a product variant
+   * Generate a unique barcode for a product variant (EAN-13 format)
    * @param {Object} product - The product object
    * @param {Object} variant - The variant object
    * @param {string} prefix - Optional prefix for the barcode (e.g., 'GEM')
-   * @returns {string} - Unique barcode string
+   * @returns {string} - Unique EAN-13 barcode string
    */
   static generateBarcode(product, variant, prefix = 'GEM') {
     try {
-      // Create a unique identifier based on product and variant data
-      const productId = (product.id || '0').toString();
-      const variantId = (variant.id || '0').toString();
-      const productTitle = (product.title || '').replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
-      const variantTitle = (variant.title || '').replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
-      
-      // Create a hash of the combination
-      const dataToHash = `${productId}-${variantId}-${productTitle}-${variantTitle}`;
-      const hash = crypto.createHash('md5').update(dataToHash).digest('hex');
-      
-      // Take first 8 characters of hash for uniqueness
-      const uniquePart = hash.substring(0, 8).toUpperCase();
-      
-      // Create barcode format: PREFIX + PRODUCT_ID + VARIANT_ID + UNIQUE_HASH
-      const barcode = `${prefix}${productId.padStart(6, '0')}${variantId.padStart(4, '0')}${uniquePart}`;
-      
-      logger.info(`Generated barcode for variant ${variant.id}: ${barcode}`);
-      return barcode;
+      // Use EAN-13 format for standard retail barcodes
+      return this.generateEAN13Barcode(product, variant, '00');
     } catch (error) {
       logger.error(`Error generating barcode: ${error.message}`);
       // Fallback to a simple timestamp-based barcode
@@ -64,9 +48,9 @@ class BarcodeGenerator {
   }
 
   /**
-   * Validate barcode format
+   * Validate barcode format (EAN-13)
    * @param {string} barcode - The barcode to validate
-   * @param {string} prefix - Expected prefix
+   * @param {string} prefix - Expected prefix (not used for EAN-13)
    * @returns {boolean} - Whether the barcode is valid
    */
   static validateBarcode(barcode, prefix = 'GEM') {
@@ -75,24 +59,23 @@ class BarcodeGenerator {
         return false;
       }
 
-      // Check if barcode starts with prefix
-      if (!barcode.startsWith(prefix)) {
+      // EAN-13 must be exactly 13 digits
+      if (barcode.length !== 13) {
         return false;
       }
 
-      // Check minimum length (prefix + product_id + variant_id + hash)
-      const minLength = prefix.length + 6 + 4 + 8; // 18 characters minimum
-      if (barcode.length < minLength) {
+      // Check if contains only digits
+      const digitRegex = /^[0-9]+$/;
+      if (!digitRegex.test(barcode)) {
         return false;
       }
 
-      // Check if contains only alphanumeric characters
-      const alphanumericRegex = /^[A-Z0-9]+$/;
-      if (!alphanumericRegex.test(barcode)) {
-        return false;
-      }
+      // Validate check digit
+      const baseCode = barcode.substring(0, 12);
+      const checkDigit = barcode.substring(12, 13);
+      const calculatedCheckDigit = this.calculateEAN13CheckDigit(baseCode);
 
-      return true;
+      return checkDigit === calculatedCheckDigit;
     } catch (error) {
       logger.error(`Error validating barcode: ${error.message}`);
       return false;
@@ -134,31 +117,33 @@ class BarcodeGenerator {
   }
 
   /**
-   * Extract information from barcode
-   * @param {string} barcode - The barcode to parse
-   * @param {string} prefix - Expected prefix
+   * Extract information from EAN-13 barcode
+   * @param {string} barcode - The EAN-13 barcode to parse
+   * @param {string} prefix - Expected prefix (not used for EAN-13)
    * @returns {Object} - Parsed barcode information
    */
   static parseBarcode(barcode, prefix = 'GEM') {
     try {
-      if (!this.validateBarcode(barcode, prefix)) {
-        throw new Error('Invalid barcode format');
+      if (!this.validateEAN13Barcode(barcode)) {
+        throw new Error('Invalid EAN-13 barcode format');
       }
 
-      const withoutPrefix = barcode.substring(prefix.length);
-      const productId = withoutPrefix.substring(0, 6);
-      const variantId = withoutPrefix.substring(6, 10);
-      const uniqueHash = withoutPrefix.substring(10, 18);
+      // EAN-13 format: Country Code (2) + Manufacturer Code (5) + Product Code (5) + Check Digit (1)
+      const countryCode = barcode.substring(0, 2);
+      const manufacturerCode = barcode.substring(2, 7);
+      const productCode = barcode.substring(7, 12);
+      const checkDigit = barcode.substring(12, 13);
 
       return {
-        prefix: prefix,
-        productId: parseInt(productId),
-        variantId: parseInt(variantId),
-        uniqueHash: uniqueHash,
-        fullBarcode: barcode
+        countryCode: countryCode,
+        manufacturerCode: manufacturerCode,
+        productCode: productCode,
+        checkDigit: checkDigit,
+        fullBarcode: barcode,
+        format: 'EAN-13'
       };
     } catch (error) {
-      logger.error(`Error parsing barcode: ${error.message}`);
+      logger.error(`Error parsing EAN-13 barcode: ${error.message}`);
       return null;
     }
   }
@@ -265,6 +250,40 @@ class BarcodeGenerator {
     } catch (error) {
       logger.error(`Error calculating EAN-13 check digit: ${error.message}`);
       return '0';
+    }
+  }
+
+  /**
+   * Validate EAN-13 barcode format
+   * @param {string} barcode - The EAN-13 barcode to validate
+   * @returns {boolean} - Whether the barcode is valid
+   */
+  static validateEAN13Barcode(barcode) {
+    try {
+      if (!barcode || typeof barcode !== 'string') {
+        return false;
+      }
+
+      // EAN-13 must be exactly 13 digits
+      if (barcode.length !== 13) {
+        return false;
+      }
+
+      // Check if contains only digits
+      const digitRegex = /^[0-9]+$/;
+      if (!digitRegex.test(barcode)) {
+        return false;
+      }
+
+      // Validate check digit
+      const baseCode = barcode.substring(0, 12);
+      const checkDigit = barcode.substring(12, 13);
+      const calculatedCheckDigit = this.calculateEAN13CheckDigit(baseCode);
+
+      return checkDigit === calculatedCheckDigit;
+    } catch (error) {
+      logger.error(`Error validating EAN-13 barcode: ${error.message}`);
+      return false;
     }
   }
 }
