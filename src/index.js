@@ -217,6 +217,133 @@ class ShopifyGeminiAutomation {
         res.status(500).json({ error: error.message });
       }
     });
+
+    // Barcode generation endpoints
+    this.app.post('/generate-barcodes/:productId', async (req, res) => {
+      try {
+        const { productId } = req.params;
+        logger.info(`🔧 Manual barcode generation triggered for product ${productId}`);
+        
+        // Get product from Shopify
+        const product = await shopifyService.getProduct(productId);
+        
+        if (!product) {
+          return res.status(404).json({ error: 'Product not found' });
+        }
+        
+        // Import barcode generator
+        const BarcodeGenerator = require('./utils/barcodeGenerator');
+        
+        // Generate barcodes for all variants
+        const updatedVariants = product.variants.map(variant => {
+          const barcode = BarcodeGenerator.generateUniqueBarcode(
+            product, 
+            variant, 
+            product.variants, 
+            'GEM'
+          );
+          
+          return {
+            ...variant,
+            barcode: barcode
+          };
+        });
+        
+        // Update product
+        const updateData = {
+          id: product.id,
+          variants: updatedVariants
+        };
+        
+        const updatedProduct = await shopifyService.updateProductVariants(product.id, updateData);
+        
+        if (updatedProduct) {
+          res.json({ 
+            success: true, 
+            message: `Generated barcodes for ${updatedVariants.length} variants`,
+            product: updatedProduct
+          });
+        } else {
+          res.status(500).json({ error: 'Failed to update product' });
+        }
+        
+      } catch (error) {
+        logger.error(`❌ Error in manual barcode generation: ${error.message}`);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Batch barcode generation
+    this.app.post('/generate-barcodes-batch', async (req, res) => {
+      try {
+        const { limit = 10 } = req.body;
+        logger.info(`🔧 Batch barcode generation triggered for ${limit} products`);
+        
+        // Get products without barcodes
+        const products = await shopifyService.getProducts({ limit });
+        const BarcodeGenerator = require('./utils/barcodeGenerator');
+        
+        let processed = 0;
+        let errors = 0;
+        
+        for (const product of products) {
+          try {
+            // Check if any variants need barcodes
+            const variantsWithoutBarcodes = product.variants.filter(variant => !variant.barcode);
+            
+            if (variantsWithoutBarcodes.length === 0) {
+              continue; // Skip if all variants have barcodes
+            }
+            
+            // Generate barcodes for missing variants
+            const updatedVariants = product.variants.map(variant => {
+              if (variant.barcode) {
+                return variant;
+              } else {
+                const barcode = BarcodeGenerator.generateUniqueBarcode(
+                  product, 
+                  variant, 
+                  product.variants, 
+                  'GEM'
+                );
+                
+                return {
+                  ...variant,
+                  barcode: barcode
+                };
+              }
+            });
+            
+            // Update product
+            const updateData = {
+              id: product.id,
+              variants: updatedVariants
+            };
+            
+            await shopifyService.updateProductVariants(product.id, updateData);
+            processed++;
+            
+            logger.info(`✅ Generated barcodes for product ${product.id}: ${product.title}`);
+            
+          } catch (error) {
+            logger.error(`❌ Error processing product ${product.id}: ${error.message}`);
+            errors++;
+          }
+        }
+        
+        res.json({ 
+          success: true, 
+          message: `Batch processing complete`,
+          processed,
+          errors,
+          total: products.length
+        });
+        
+      } catch (error) {
+        logger.error(`❌ Error in batch barcode generation: ${error.message}`);
+        res.status(500).json({ error: error.message });
+      }
+    });
   }
 
   /**
@@ -243,6 +370,62 @@ class ShopifyGeminiAutomation {
           // Handle variant update only
           const result = await shopifyService.updateVariantsInDescription(webhookData.productId);
           logger.logWebhookEvent(topic, payload.id, 'processed', { result });
+        } else if (topic === 'products/create' || topic === 'products/update') {
+          // Handle barcode generation for new/updated products
+          try {
+            const BarcodeGenerator = require('./utils/barcodeGenerator');
+            const product = payload;
+            
+            logger.info(`🏷️  Auto-generating barcodes for product: ${product.title} (ID: ${product.id})`);
+            
+            // Check if any variants need barcodes
+            const variantsWithoutBarcodes = product.variants.filter(variant => !variant.barcode);
+            
+            if (variantsWithoutBarcodes.length > 0) {
+              // Generate barcodes for missing variants
+              const updatedVariants = product.variants.map(variant => {
+                if (variant.barcode) {
+                  return variant;
+                } else {
+                  const barcode = BarcodeGenerator.generateUniqueBarcode(
+                    product, 
+                    variant, 
+                    product.variants, 
+                    'GEM'
+                  );
+                  
+                  logger.info(`   Generated barcode for ${variant.title}: ${barcode}`);
+                  
+                  return {
+                    ...variant,
+                    barcode: barcode
+                  };
+                }
+              });
+              
+              // Update product with new barcodes
+              const updateData = {
+                id: product.id,
+                variants: updatedVariants
+              };
+              
+              const updatedProduct = await shopifyService.updateProductVariants(product.id, updateData);
+              
+              if (updatedProduct) {
+                logger.info(`✅ Successfully auto-generated barcodes for product ${product.id}`);
+                logger.logWebhookEvent(topic, payload.id, 'processed', { 
+                  action: 'barcode_generation',
+                  barcodesGenerated: variantsWithoutBarcodes.length 
+                });
+              } else {
+                logger.error(`❌ Failed to auto-generate barcodes for product ${product.id}`);
+              }
+            } else {
+              logger.info(`✅ Product ${product.id} already has barcodes for all variants`);
+            }
+          } catch (error) {
+            logger.error(`❌ Error in auto barcode generation: ${error.message}`);
+          }
         }
         
         res.status(200).send('OK');
@@ -295,9 +478,13 @@ class ShopifyGeminiAutomation {
       
       // Start server
       this.app.listen(this.port, () => {
-        logger.info(`Shopify-Gemini Automation server started on port ${this.port}`);
-        logger.info(`Health check: http://localhost:${this.port}/health`);
-        logger.info(`Webhook endpoint: http://localhost:${this.port}${process.env.WEBHOOK_PATH || '/webhooks/shopify'}`);
+        logger.info(`🚀 Shopify-Gemini Automation server started on port ${this.port}`);
+        logger.info(`📊 Health check: http://localhost:${this.port}/health`);
+        logger.info(`📡 Webhook endpoint: http://localhost:${this.port}${process.env.WEBHOOK_PATH || '/webhooks/shopify'}`);
+        logger.info(`🏷️  Barcode endpoints:`);
+        logger.info(`   POST /generate-barcodes/:productId - Manual barcode generation`);
+        logger.info(`   POST /generate-barcodes-batch - Batch barcode generation`);
+        logger.info(`🔄 Auto barcode generation enabled for new/updated products`);
       });
       
     } catch (error) {
