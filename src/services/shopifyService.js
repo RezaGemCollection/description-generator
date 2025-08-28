@@ -498,6 +498,48 @@ class ShopifyService {
   }
 
   /**
+   * Update product variants (including barcodes)
+   */
+  async updateProductVariants(productId, updateData) {
+    try {
+      await this.applyRateLimit();
+      
+      const updatedProduct = await this.shopify.product.update(productId, updateData);
+      logger.info(`Updated variants for product: ${updatedProduct.title} (ID: ${productId})`);
+      
+      return updatedProduct;
+    } catch (error) {
+      logger.error(`Error updating variants for product ${productId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get products with optional filtering
+   */
+  async getProducts(options = {}) {
+    try {
+      await this.applyRateLimit();
+      
+      const params = {
+        limit: options.limit || 50,
+        fields: shopifyConfig.productFields.join(',')
+      };
+      
+      if (options.sinceId) {
+        params.since_id = options.sinceId;
+      }
+
+      const products = await this.shopify.product.list(params);
+      logger.info(`Retrieved ${products.length} products`);
+      return products;
+    } catch (error) {
+      logger.error(`Error retrieving products: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
    * Update only the variants bullet point in existing description
    */
   async updateVariantsInDescription(productId) {
