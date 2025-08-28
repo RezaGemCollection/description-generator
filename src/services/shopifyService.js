@@ -235,29 +235,29 @@ class ShopifyService {
   }
 
   /**
-   * Get products that need description generation (ONLY NEW PRODUCTS)
+   * Get products that need description generation (ONLY VERY RECENT NEW PRODUCTS)
    */
   async getProductsNeedingDescription(limit = 50) {
     try {
-      // Only get recently created products (last 24 hours)
-      const oneDayAgo = new Date();
-      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+      // Only get very recently created products (last 1 hour) to catch any missed ones
+      const oneHourAgo = new Date();
+      oneHourAgo.setHours(oneHourAgo.getHours() - 1);
       
       const products = await this.getAllProducts(limit);
       
-      // Filter products that are NEW and don't have AI-generated descriptions
+      // Filter products that are VERY NEW and don't have AI-generated descriptions
       const productsNeedingDescription = products.filter(product => {
         const createdAt = new Date(product.created_at);
-        const isNewProduct = createdAt > oneDayAgo;
+        const isVeryNewProduct = createdAt > oneHourAgo;
         
         const needsDescription = !product.body_html || 
                                !product.body_html.includes('Verified by Gemmologist Reza Piroznia') ||
                                product.body_html.length < 100;
         
-        return isNewProduct && needsDescription;
+        return isVeryNewProduct && needsDescription;
       });
 
-      logger.info(`Found ${productsNeedingDescription.length} NEW products needing description`);
+      logger.info(`Found ${productsNeedingDescription.length} VERY NEW products needing description`);
       return productsNeedingDescription;
     } catch (error) {
       logger.error(`Error finding products needing description: ${error.message}`);
@@ -369,18 +369,12 @@ class ShopifyService {
     const product = payload;
     logger.info(`Product created: ${product.title} (ID: ${product.id})`);
     
-    // Check if product needs description generation
-    if (!product.body_html || product.body_html.length < 100) {
-      return {
-        action: 'generate_description',
-        productId: product.id,
-        product: product
-      };
-    }
-    
+    // NEW PRODUCT: Always generate description for newly created products
     return {
-      action: 'skip',
-      reason: 'Product already has description'
+      action: 'generate_description',
+      productId: product.id,
+      product: product,
+      reason: 'New product created'
     };
   }
 
@@ -394,20 +388,9 @@ class ShopifyService {
     // Check if variants have changed by comparing with previous state
     const hasVariantChanges = await VariantParser.detectVariantChanges(product);
     
-    // Check if product needs description generation (ONLY for NEW products)
-    const isNewProduct = await this.isNewProduct(product);
-    
-    if (isNewProduct && (!product.body_html || !product.body_html.includes('Verified by Gemmologist Reza Piroznia'))) {
-      const reason = 'New product needs description';
-      logger.info(`NEW Product ${product.id} needs description generation: ${reason}`);
-      
-      return {
-        action: 'generate_description',
-        productId: product.id,
-        product: product,
-        reason: reason
-      };
-    } else if (hasVariantChanges) {
+    // For product updates, ONLY handle variant changes, NOT description generation
+    // Description generation should ONLY happen on product creation
+    if (hasVariantChanges) {
       const reason = 'Variants changed';
       logger.info(`Product ${product.id} needs variant update: ${reason}`);
       
@@ -421,7 +404,7 @@ class ShopifyService {
     
     return {
       action: 'skip',
-      reason: 'Product already has AI-generated description and no variant changes'
+      reason: 'No variant changes detected'
     };
   }
 

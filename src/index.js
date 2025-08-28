@@ -370,8 +370,10 @@ class ShopifyGeminiAutomation {
           // Handle variant update only
           const result = await shopifyService.updateVariantsInDescription(webhookData.productId);
           logger.logWebhookEvent(topic, payload.id, 'processed', { result });
-        } else if (topic === 'products/create' || topic === 'products/update') {
-          // Handle barcode generation for new/updated products
+        }
+        
+        // Always handle barcode generation for new/updated products (regardless of other actions)
+        if (topic === 'products/create' || topic === 'products/update') {
           try {
             const BarcodeGenerator = require('./utils/barcodeGenerator');
             const product = payload;
