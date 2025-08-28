@@ -388,9 +388,23 @@ class ShopifyService {
     // Check if variants have changed by comparing with previous state
     const hasVariantChanges = await this.detectVariantChanges(product);
     
-    // For product updates, ONLY handle variant changes, NOT description generation
-    // Description generation should ONLY happen on product creation
-    if (hasVariantChanges) {
+    // Check if this is a NEW product that needs description generation
+    const isNewProduct = await this.isNewProduct(product);
+    const needsDescription = !product.body_html || 
+                           !product.body_html.includes('Verified by Gemmologist Reza Piroznia') ||
+                           product.body_html.length < 100;
+    
+    if (isNewProduct && needsDescription) {
+      const reason = 'New product needs description';
+      logger.info(`NEW Product ${product.id} needs description generation: ${reason}`);
+      
+      return {
+        action: 'generate_description',
+        productId: product.id,
+        product: product,
+        reason: reason
+      };
+    } else if (hasVariantChanges) {
       const reason = 'Variants changed';
       logger.info(`Product ${product.id} needs variant update: ${reason}`);
       
@@ -404,7 +418,7 @@ class ShopifyService {
     
     return {
       action: 'skip',
-      reason: 'No variant changes detected'
+      reason: 'No changes detected'
     };
   }
 
